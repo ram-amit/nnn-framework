@@ -339,7 +339,7 @@ class RealDataConfig:
     spend_col: str = "Spend"
     text_col: str = "Campaign_Metadata"
     target_cols: List[str] = field(
-        default_factory=lambda: ["Enterprise_Trials", "Closed_Won", "DEP"]
+        default_factory=lambda: ["Enterprise_Trials", "Closed_Won", "DEP", "DEP2"]
     )
     numeric_features: List[str] = field(
         default_factory=lambda: ["Spend", "Enterprise_Trials"]

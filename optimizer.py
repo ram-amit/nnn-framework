@@ -42,6 +42,11 @@ class OptimizerConfig:
     n_heads: int = 4
     d_ff: int = 256
     n_funnel_stages: int = 3
+    # Constraints: max % change per channel, min spend floor
+    max_change_pct: float = 0.30
+    min_spend_floor: float = 1000.0
+    # MC Dropout: number of forward passes for confidence intervals
+    mc_samples: int = 50
 
 
 # =========================================================================
@@ -189,21 +194,38 @@ def run_sensitivity(bundle: Dict, config: OptimizerConfig) -> Dict:
 # 2. Synergy-Aware Budget Optimizer
 # =========================================================================
 
+def mc_dropout_predict(model, X, y_mean, y_std, n_samples=50):
+    """
+    MC Dropout: run the model multiple times with dropout enabled
+    to get a distribution of predictions → confidence intervals.
+    """
+    model.train()  # enable dropout
+    preds = []
+    for _ in range(n_samples):
+        with torch.no_grad():
+            pred = model(X).squeeze(-1)
+            cw = pred_to_closed_won(pred, y_mean, y_std).sum().item()
+            preds.append(cw)
+    model.eval()
+    preds = np.array(preds)
+    return {
+        "mean": float(preds.mean()),
+        "std": float(preds.std()),
+        "ci_low": float(np.percentile(preds, 5)),
+        "ci_high": float(np.percentile(preds, 95)),
+    }
+
+
 def optimize_budget(
     bundle: Dict,
     config: OptimizerConfig,
 ) -> Dict:
     """
-    Find the optimal spend allocation across 13 channels that maximizes
-    predicted Closed_Won deals, subject to a fixed total budget.
-
-    The model's attention mechanism captures cross-channel synergies
-    automatically: when we change one channel's spend, the attention
-    weights redistribute, affecting all other channels' representations.
-    This means the gradients naturally encode synergy effects.
-
-    Uses projected gradient descent with softmax parameterization
-    to maintain valid budget allocation.
+    Find the optimal spend allocation with real-world constraints:
+    - Max +/- 30% change per channel (configurable)
+    - Minimum spend floor per channel
+    - Fixed total budget
+    - MC Dropout confidence intervals on the final prediction
     """
     model = bundle["model"]
     X = bundle["X"]
@@ -217,45 +239,46 @@ def optimize_budget(
     baseline_start = max(0, T - config.baseline_weeks)
     X_base = X[:, baseline_start:, :, :].clone()
 
-    budget_norm = config.weekly_budget / spend_max
+    # Compute constrained bounds per channel
+    max_pct = config.max_change_pct
+    min_floor = config.min_spend_floor
+    lower_bounds = np.maximum(current_spend * (1 - max_pct), min_floor)
+    upper_bounds = current_spend * (1 + max_pct)
 
-    # Initialize allocation logits from current spend proportions
-    current_total = current_spend.sum()
-    current_props = current_spend / (current_total + 1e-8)
-    # Clamp small values to prevent -inf in log
-    current_props = np.clip(current_props, 0.01, None)
-    current_props = current_props / current_props.sum()
+    # Parameterize as multipliers in [0, 1] mapped to [lower, upper]
+    # raw_param in (-inf, inf) → sigmoid → [0, 1] → [lower, upper]
+    raw_params = nn.Parameter(torch.zeros(n_channels))
 
-    alloc_logits = nn.Parameter(torch.tensor(
-        np.log(current_props), dtype=torch.float32,
-    ))
+    optimizer = torch.optim.Adam([raw_params], lr=config.optim_lr)
+    lower_t = torch.tensor(lower_bounds / spend_max, dtype=torch.float32)
+    upper_t = torch.tensor(upper_bounds / spend_max, dtype=torch.float32)
 
-    optimizer = torch.optim.Adam([alloc_logits], lr=config.optim_lr)
-
-    # Freeze model weights
     for p in model.parameters():
         p.requires_grad_(False)
 
     history = []
     best_cw = -float("inf")
-    best_alloc = None
+    best_params = None
 
     for step in range(config.optim_steps):
         optimizer.zero_grad()
 
-        # Softmax → proportions → spend per channel (in normalized units)
-        proportions = torch.softmax(alloc_logits, dim=0)
-        spend_per_channel = proportions * budget_norm
+        # Map raw params to constrained spend
+        t = torch.sigmoid(raw_params)
+        spend_norm = lower_t + t * (upper_t - lower_t)
 
-        # Inject optimized spend into tensor
+        # Scale to hit target budget
+        total_norm = spend_norm.sum()
+        target_norm = config.weekly_budget / spend_max
+        spend_scaled = spend_norm * (target_norm / (total_norm + 1e-8))
+
         X_opt = X_base.clone().detach()
         for c in range(n_channels):
-            X_opt[:, :, c, 0] = spend_per_channel[c]
+            X_opt[:, :, c, 0] = spend_scaled[c]
 
         pred = model(X_opt).squeeze(-1)
         total_cw = pred_to_closed_won(pred, y_mean, y_std).sum()
 
-        # Maximize closed-won → minimize negative
         loss = -total_cw
         loss.backward()
         optimizer.step()
@@ -263,24 +286,37 @@ def optimize_budget(
         cw_val = total_cw.item()
         if cw_val > best_cw:
             best_cw = cw_val
-            best_alloc = proportions.detach().clone()
+            best_params = raw_params.detach().clone()
 
         if step % 100 == 0 or step == config.optim_steps - 1:
-            dollar_alloc = (proportions.detach().numpy() * config.weekly_budget)
+            dollar_alloc = spend_scaled.detach().numpy() * spend_max
             top3 = np.argsort(-dollar_alloc)[:3]
-            print(f"  Step {step:4d}: Predicted CW={cw_val:,.0f}  "
-                  f"Top: {channel_names[top3[0]]}=${dollar_alloc[top3[0]]:,.0f}, "
+            print(f"  Step {step:4d}: CW={cw_val:,.0f}  "
+                  f"{channel_names[top3[0]]}=${dollar_alloc[top3[0]]:,.0f}, "
                   f"{channel_names[top3[1]]}=${dollar_alloc[top3[1]]:,.0f}, "
                   f"{channel_names[top3[2]]}=${dollar_alloc[top3[2]]:,.0f}")
 
         history.append({"step": step, "predicted_cw": cw_val})
 
-    # Re-enable model gradients
     for p in model.parameters():
         p.requires_grad_(True)
 
-    # Build final allocation
-    optimal_dollars = (best_alloc.numpy() * config.weekly_budget)
+    # Final allocation from best params
+    t = torch.sigmoid(best_params)
+    spend_norm = lower_t + t * (upper_t - lower_t)
+    target_norm = config.weekly_budget / spend_max
+    spend_final = spend_norm * (target_norm / (spend_norm.sum() + 1e-8))
+    optimal_dollars = spend_final.numpy() * spend_max
+
+    # MC Dropout confidence interval on optimal allocation
+    X_opt_final = X_base.clone()
+    for c in range(n_channels):
+        X_opt_final[:, :, c, 0] = spend_final[c]
+    ci = mc_dropout_predict(model, X_opt_final, y_mean, y_std, config.mc_samples)
+    print(f"\n  Confidence interval (90%): {ci['ci_low']:,.0f} - {ci['ci_high']:,.0f} deals "
+          f"(mean={ci['mean']:,.0f}, std={ci['std']:,.0f})")
+
+    optimal_props = optimal_dollars / (optimal_dollars.sum() + 1e-8)
 
     return {
         "optimal_allocation": {
@@ -288,10 +324,15 @@ def optimize_budget(
             for i, ch in enumerate(channel_names)
         },
         "optimal_proportions": {
-            ch: float(best_alloc[i])
+            ch: float(optimal_props[i])
             for i, ch in enumerate(channel_names)
         },
         "predicted_closed_won": best_cw,
+        "confidence_interval": ci,
+        "constraints": {
+            "max_change_pct": config.max_change_pct,
+            "min_spend_floor": config.min_spend_floor,
+        },
         "budget": config.weekly_budget,
         "history": history,
     }

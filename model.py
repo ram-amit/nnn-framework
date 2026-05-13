@@ -209,6 +209,36 @@ class GatedFunnelTransition(nn.Module):
         return g * self.transform(x) + (1 - g) * x
 
 
+class ChannelSaturation(nn.Module):
+    """
+    Learnable Hill-function saturation per channel.
+
+    For each channel, applies: out = x^n / (K^n + x^n)
+    where K (half-saturation) and n (steepness) are learned parameters.
+    This forces the model to capture diminishing returns explicitly
+    rather than relying on the attention mechanism alone.
+
+    Applied to the spend dimension (index 0) before the transformer.
+    """
+
+    def __init__(self, n_channels: int, n_saturated_features: int = 1):
+        super().__init__()
+        self.n_sat = n_saturated_features
+        # Log-space params for numerical stability (K > 0, n > 0)
+        self.log_K = nn.Parameter(torch.zeros(n_channels, n_saturated_features))
+        self.log_n = nn.Parameter(torch.zeros(n_channels, n_saturated_features))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x: (batch, time, channels, input_dim). Saturates first n_sat dims."""
+        K = torch.exp(self.log_K).unsqueeze(0).unsqueeze(0)    # (1, 1, C, n_sat)
+        n = 1.0 + torch.exp(self.log_n).unsqueeze(0).unsqueeze(0)
+
+        raw = x[..., :self.n_sat]                               # (B, T, C, n_sat)
+        raw_pos = raw.clamp(min=0)
+        saturated = raw_pos.pow(n) / (K.pow(n) + raw_pos.pow(n) + 1e-8)
+        return torch.cat([saturated, x[..., self.n_sat:]], dim=-1)
+
+
 FUNNEL_STAGE_NAMES = ["tofu", "mofu", "bofu"]
 
 
@@ -242,6 +272,9 @@ class NNNModel(nn.Module):
         self.n_channels = n_channels
         self.d_model = d_model
         self.n_funnel_stages = n_funnel_stages
+
+        # --- Saturation layer (Hill function on spend) ---
+        self.saturation = ChannelSaturation(n_channels, n_saturated_features=1)
 
         # --- Input projection ---
         self.input_proj = nn.Linear(input_dim, d_model)
@@ -299,6 +332,7 @@ class NNNModel(nn.Module):
         """
         B, T, C, D = x.shape
 
+        x = self.saturation(x)
         x = self.input_proj(x)
         x = x + self.time_pos[:, :T, :, :]
         x = x + self.channel_emb[:, :, :C, :]
@@ -459,6 +493,18 @@ class NNNModel(nn.Module):
                 l1 = l1 + attn.W_v.weight.abs().mean()
         return l1
 
+    def get_saturation_params(self, channel_names: Optional[List[str]] = None) -> Dict:
+        """Extract learned Hill function parameters per channel."""
+        K = torch.exp(self.saturation.log_K).detach()     # (C, 1)
+        n = 1.0 + torch.exp(self.saturation.log_n).detach()
+        C = K.shape[0]
+        if channel_names is None:
+            channel_names = [f"channel_{i}" for i in range(C)]
+        return {
+            ch: {"K": K[i, 0].item(), "n": n[i, 0].item()}
+            for i, ch in enumerate(channel_names)
+        }
+
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
@@ -468,6 +514,7 @@ class NNNModel(nn.Module):
             f"  Channels:       {self.n_channels}",
             f"  d_model:        {self.d_model}",
             f"  Funnel stages:  {self.n_funnel_stages}",
+            f"  Saturation:     Hill function (learnable K, n per channel)",
             f"  Parameters:     {self.count_parameters():,}",
             f"  Stage weights:  {F.softmax(self.stage_weights, dim=0).detach().tolist()}",
         ]

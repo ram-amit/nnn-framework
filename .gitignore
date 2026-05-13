@@ -11,3 +11,8 @@ data/.embedding_cache/
 
 # Model weights (too large for git)
 output/nnn_model.pt
+
+# Temp/backup files
+data/real_marketing_data_backup.csv
+data/dep_by_channel_weekly.csv
+explore_dep_metrics.py

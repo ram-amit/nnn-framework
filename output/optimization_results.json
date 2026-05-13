@@ -4,115 +4,115 @@
     "steps": 800
   },
   "optimal_allocation": {
-    "Affiliates": 440889.78125,
-    "Bing": 720.8778686523438,
-    "CTV": 229672.515625,
-    "Display": 1413.0953369140625,
-    "Facebook": 2684.43505859375,
-    "Google Brand": 599.6163330078125,
-    "Google Non-Brand": 6254.04443359375,
-    "Google Shopping": 169.74267578125,
-    "LinkedIn": 6771.048828125,
-    "Podcast": 203.13650512695312,
-    "Reddit": 98392.90625,
-    "Review Sites": 226.25537109375,
-    "YouTube": 212002.515625
+    "Affiliates": 79332.8203125,
+    "Bing": 32724.607421875,
+    "CTV": 14997.2353515625,
+    "Display": 17102.234375,
+    "Facebook": 161525.109375,
+    "Google Brand": 40897.01953125,
+    "Google Non-Brand": 520088.84375,
+    "Google Shopping": 4253.232421875,
+    "LinkedIn": 33153.01953125,
+    "Podcast": 7020.755859375,
+    "Reddit": 6838.009765625,
+    "Review Sites": 9988.4326171875,
+    "YouTube": 72078.6328125
   },
   "optimal_proportions": {
-    "Affiliates": 0.44088977575302124,
-    "Bing": 0.0007208778406493366,
-    "CTV": 0.22967252135276794,
-    "Display": 0.0014130952768027782,
-    "Facebook": 0.0026844351086765528,
-    "Google Brand": 0.0005996163235977292,
-    "Google Non-Brand": 0.006254044361412525,
-    "Google Shopping": 0.00016974267782643437,
-    "LinkedIn": 0.0067710489965975285,
-    "Podcast": 0.000203136500203982,
-    "Reddit": 0.09839290380477905,
-    "Review Sites": 0.0002262553753098473,
-    "YouTube": 0.21200251579284668
+    "Affiliates": 0.07933282852172852,
+    "Bing": 0.03272460773587227,
+    "CTV": 0.014997236430644989,
+    "Display": 0.017102235928177834,
+    "Facebook": 0.16152511537075043,
+    "Google Brand": 0.04089702293276787,
+    "Google Non-Brand": 0.5200888514518738,
+    "Google Shopping": 0.004253232851624489,
+    "LinkedIn": 0.03315301984548569,
+    "Podcast": 0.007020756136626005,
+    "Reddit": 0.006838010158389807,
+    "Review Sites": 0.009988433681428432,
+    "YouTube": 0.072078637778759
   },
-  "predicted_closed_won": 3828.75537109375,
-  "baseline_closed_won": 3835.21875,
-  "uplift_pct": -0.168526994874364,
+  "predicted_closed_won": 2934.47265625,
+  "baseline_closed_won": 2917.596923828125,
+  "uplift_pct": 0.5784120583618803,
   "sensitivity": {
     "Affiliates": {
-      "marginal_roi": 0.0012543582517058434,
+      "marginal_roi": 3.5419718914364496e-05,
       "saturated": false,
-      "saturation_ratio": 0.9833635452447033,
+      "saturation_ratio": 1.6190234868766935,
       "current_spend": 72236.42164361775
     },
     "Bing": {
-      "marginal_roi": 0.0006978476981107896,
+      "marginal_roi": 2.1149403423270054e-05,
       "saturated": false,
-      "saturation_ratio": 1.0094938869419972,
+      "saturation_ratio": 1.659728741077115,
       "current_spend": 29551.66098492481
     },
     "CTV": {
-      "marginal_roi": 0.0012543304917529388,
+      "marginal_roi": 1.106878467352105e-05,
       "saturated": false,
-      "saturation_ratio": 0.9990872624798998,
+      "saturation_ratio": 1.645316877232547,
       "current_spend": 12351.73996346267
     },
     "Display": {
-      "marginal_roi": 0.0010237500259674163,
+      "marginal_roi": 1.3054193563096038e-05,
       "saturated": false,
-      "saturation_ratio": 0.9926991159200673,
+      "saturation_ratio": 1.6493488946147865,
       "current_spend": 19450.167394214404
     },
     "Facebook": {
-      "marginal_roi": 0.0007075736154816628,
+      "marginal_roi": 7.07412289987937e-05,
       "saturated": false,
-      "saturation_ratio": 0.9636903383965095,
+      "saturation_ratio": 1.6422072964451018,
       "current_spend": 60533.67496012748
     },
     "Google Brand": {
-      "marginal_roi": 0.0007660557949141937,
+      "marginal_roi": 4.226951273810415e-05,
       "saturated": false,
-      "saturation_ratio": 1.0071886674676607,
+      "saturation_ratio": 1.65456125876515,
       "current_spend": 34712.61108063534
     },
     "Google Non-Brand": {
-      "marginal_roi": 0.0007672792156019169,
+      "marginal_roi": 0.0001814796518106681,
       "saturated": false,
-      "saturation_ratio": 0.956298882713472,
+      "saturation_ratio": 1.3600781475218957,
       "current_spend": 262907.7247376949
     },
     "Google Shopping": {
-      "marginal_roi": 0.0005728130130662551,
-      "saturated": false,
-      "saturation_ratio": 0.9981012985508555,
+      "marginal_roi": -4.199508893447618e-07,
+      "saturated": true,
+      "saturation_ratio": -3.001229303522723,
       "current_spend": 5813.551803086466
     },
     "LinkedIn": {
-      "marginal_roi": 0.0011660857272349297,
+      "marginal_roi": 7.296126257802567e-06,
       "saturated": false,
-      "saturation_ratio": 0.9950264702582841,
+      "saturation_ratio": 1.647997299921224,
       "current_spend": 20746.240148653742
     },
     "Podcast": {
-      "marginal_roi": 0.00047669017326821997,
+      "marginal_roi": 8.762687008606986e-06,
       "saturated": false,
-      "saturation_ratio": 1.0037652114969116,
+      "saturation_ratio": 1.6421017231322852,
       "current_spend": 12537.624719587993
     },
     "Reddit": {
-      "marginal_roi": 0.0011283377297472829,
+      "marginal_roi": 1.0280570747377738e-05,
       "saturated": false,
-      "saturation_ratio": 1.0001278804945524,
+      "saturation_ratio": 1.6465084911168466,
       "current_spend": 13536.228646105808
     },
     "Review Sites": {
-      "marginal_roi": 0.0006478107095314674,
+      "marginal_roi": 2.177514990021739e-06,
       "saturated": false,
-      "saturation_ratio": 0.9996657069747539,
+      "saturation_ratio": 1.6666211567982785,
       "current_spend": 4484.756727063796
     },
     "YouTube": {
-      "marginal_roi": 0.0012082431922809352,
+      "marginal_roi": 5.458345039104631e-05,
       "saturated": false,
-      "saturation_ratio": 0.9640040033904561,
+      "saturation_ratio": 1.6174645041333766,
       "current_spend": 74158.95355634279
     }
   }
