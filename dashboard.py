@@ -2,7 +2,7 @@
 dashboard.py — NNN Media Budget Planner
 
 Built for Growth Marketing teams. Uses a trained NNN transformer model
-under the hood, surfacing channel efficiency, budget scenarios, DEP impact,
+under the hood, surfacing channel efficiency, budget scenarios, DEP2 impact,
 and cross-channel synergies in actionable terms.
 
 Run:  streamlit run dashboard.py
@@ -67,11 +67,11 @@ def load_data():
     csv = pd.read_csv(ROOT / "data" / "real_marketing_data.csv", keep_default_na=False, na_values=[""])
     channel_names = meta["channels"]
     current_spend = np.array([csv.groupby("Channel")["Spend"].mean().get(ch, 0) for ch in channel_names])
-    current_dep = np.array([csv.groupby("Channel")["DEP"].mean().get(ch, 0) for ch in channel_names])
+    current_dep = np.array([csv.groupby("Channel")["DEP2"].mean().get(ch, 0) for ch in channel_names])
 
     # Weekly totals for backtest
     dep_by_week_geo = csv.pivot_table(
-        index="Date", columns="Geography", values="DEP", aggfunc="sum", fill_value=0,
+        index="Date", columns="Geography", values="DEP2", aggfunc="sum", fill_value=0,
     )
     spend_by_week_geo = csv.pivot_table(
         index="Date", columns="Geography", values="Spend", aggfunc="sum", fill_value=0,
@@ -158,7 +158,7 @@ def build_scorecard(channels, current_spend, current_dep, optim, synergy_df):
             "Channel": ch, "Icon": CHANNEL_ICONS.get(ch, "📊"),
             "Weekly Spend": spend, "Budget Share": spend_pct,
             "Efficiency": eff, "mROI": mroi,
-            "DEP/wk": dep, "DEP per $1K": dep_per_1k,
+            "DEP2/wk": dep, "DEP2 per $1K": dep_per_1k,
             "Signal": signal,
             "Synergy Target": f"Boosts {top_syn_name}",
             "Fed By": top_feeder,
@@ -256,18 +256,18 @@ def render_scorecard(scorecard):
                     st.markdown(f"**{r['Icon']} {r['Channel']}** &ensp; {r['Signal']}")
                     m1, m2 = st.columns(2)
                     m1.metric("Spend/wk", f"${r['Weekly Spend']:,.0f}", delta=f"{r['Budget Share']:.1f}% of budget", delta_color="off")
-                    m2.metric("DEP/wk", f"${r['DEP/wk']:,.0f}", delta=f"${r['DEP per $1K']:,.0f} per $1K", delta_color="off")
+                    m2.metric("DEP2/wk", f"${r['DEP2/wk']:,.0f}", delta=f"${r['DEP2 per $1K']:,.0f} per $1K", delta_color="off")
                     st.caption(f"mROI: {r['mROI']:.5f} · {r['Synergy Target']} · Fed by {r['Fed By']}")
 
     # Efficiency vs Budget Share scatter
     fig = px.scatter(
-        scorecard, x="Budget Share", y="DEP per $1K",
+        scorecard, x="Budget Share", y="DEP2 per $1K",
         size="Weekly Spend", color="Signal",
         text="Channel",
         color_discrete_map={
             "🟢 Invest More": "#2ecc71", "🟡 Hold": "#f39c12", "🔴 Reduce": "#e74c3c",
         },
-        labels={"Budget Share": "Budget Share (%)", "DEP per $1K": "DEP per $1K Spend"},
+        labels={"Budget Share": "Budget Share (%)", "DEP2 per $1K": "DEP2 per $1K Spend"},
     )
     fig.update_traces(textposition="top center", textfont_size=10)
     fig.update_layout(height=400, showlegend=False, margin=dict(l=10, r=10, t=30, b=10))
@@ -313,7 +313,7 @@ def render_planner(d, scorecard):
     old_total = current_spend.sum()
     new_total = new_spend.sum()
 
-    # DEP impact (proportional estimate based on current DEP/spend ratio)
+    # DEP2 impact (proportional estimate based on current DEP/spend ratio)
     old_dep_total = current_dep.sum()
     new_dep = current_dep * mults
     new_dep_total = new_dep.sum()
@@ -327,8 +327,8 @@ def render_planner(d, scorecard):
     st.markdown("### Projected Impact")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Closed-Won Deals", f"{sim_cw:,.0f}", delta=f"{delta_cw:+,.0f} ({delta_pct:+.1f}%)")
-    c2.metric("Weekly DEP", f"${new_dep_total:,.0f}", delta=f"${dep_delta:+,.0f}")
-    c3.metric("DEP / Spend", f"${new_dep_per_spend:,.2f}", delta=f"${new_dep_per_spend - old_dep_per_spend:+,.3f}")
+    c2.metric("Weekly DEP2", f"${new_dep_total:,.0f}", delta=f"${dep_delta:+,.0f}")
+    c3.metric("DEP2 / Spend", f"${new_dep_per_spend:,.2f}", delta=f"${new_dep_per_spend - old_dep_per_spend:+,.3f}")
     c4.metric("Weekly Budget", f"${new_total:,.0f}", delta=f"${new_total - old_total:+,.0f}" if abs(new_total - old_total) > 100 else "No change")
 
     # Before/after + response curves side by side
@@ -411,9 +411,9 @@ def render_planner(d, scorecard):
             "Current_Weekly_Spend": round(current_spend[i], 2),
             "Planned_Weekly_Spend": round(new_spend[i], 2),
             "Change_Pct": f"{(mults[i]-1)*100:+.0f}%",
-            "Current_DEP": round(current_dep[i], 2),
-            "Planned_DEP": round(new_dep[i], 2),
-            "DEP_per_1K_Spend": round(sc_row["DEP per $1K"], 2),
+            "Current_DEP2": round(current_dep[i], 2),
+            "Planned_DEP2": round(new_dep[i], 2),
+            "DEP2_per_1K_Spend": round(sc_row["DEP2 per $1K"], 2),
             "Efficiency_Signal": sc_row["Signal"],
             "Projected_CW_Delta": round(delta_cw),
             "Scenario": scenario,
@@ -445,8 +445,8 @@ def render_deep_dive(d, scorecard):
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Weekly Spend", f"${sc['Weekly Spend']:,.0f}")
     c2.metric("Budget Share", f"{sc['Budget Share']:.1f}%")
-    c3.metric("DEP/wk", f"${sc['DEP/wk']:,.0f}")
-    c4.metric("DEP per $1K", f"${sc['DEP per $1K']:,.0f}")
+    c3.metric("DEP2/wk", f"${sc['DEP2/wk']:,.0f}")
+    c4.metric("DEP2 per $1K", f"${sc['DEP2 per $1K']:,.0f}")
     c5.metric("Signal", sc["Signal"].split(" ", 1)[1])
 
     left, right = st.columns(2)
@@ -531,12 +531,12 @@ def render_backtest(d):
     c3.metric("Model Confidence", "High" if r2 > 0.85 else "Medium" if r2 > 0.7 else "Low")
 
     # DEP trend
-    st.markdown("#### DEP Trend by Channel")
+    st.markdown("#### DEP2 Trend by Channel")
     csv = d["csv"]
-    dep_trend = csv.groupby(["Date", "Channel"])["DEP"].sum().reset_index()
-    dep_trend = dep_trend[dep_trend["DEP"] > 0]
+    dep_trend = csv.groupby(["Date", "Channel"])["DEP2"].sum().reset_index()
+    dep_trend = dep_trend[dep_trend["DEP2"] > 0]
     if len(dep_trend) > 0:
-        fig_dep = px.area(dep_trend, x="Date", y="DEP", color="Channel", labels={"DEP": "Weekly DEP ($)"})
+        fig_dep = px.area(dep_trend, x="Date", y="DEP2", color="Channel", labels={"DEP2": "Weekly DEP2 ($)"})
         fig_dep.update_layout(height=350, legend=dict(orientation="h", y=-0.15), margin=dict(l=10, r=10, t=10, b=10))
         st.plotly_chart(fig_dep, use_container_width=True)
 
@@ -549,7 +549,7 @@ def main():
     st.set_page_config(page_title="NNN Media Budget Planner", page_icon="📊", layout="wide")
 
     st.markdown("# 📊 Media Budget Planner")
-    st.caption("Powered by NNN — trained on 71 weeks of real spend, CRM, and DEP data across 5 regions and 13 channels.")
+    st.caption("Powered by NNN — trained on 71 weeks of real spend, CRM, and DEP2 data across 5 regions and 13 channels.")
 
     d = load_data()
     optim = load_optim()
