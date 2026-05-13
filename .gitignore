@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Large data files — keep sample, ignore full extracts
+data/real_marketing_data.csv
+data/synthetic_media_data.csv
+data/synthetic_targets.csv
+data/embeddings.npy
+data/.embedding_cache/
+
+# Model weights (too large for git)
+output/nnn_model.pt

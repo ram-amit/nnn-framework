@@ -1,0 +1,8 @@
+torch>=2.0
+numpy>=1.24
+pandas>=2.0
+streamlit>=1.30
+plotly>=5.18
+networkx>=3.0
+snowflake-connector-python>=3.6
+openai>=1.0

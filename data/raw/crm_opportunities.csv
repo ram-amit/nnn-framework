@@ -1,0 +1,19 @@
+opportunity_id,close_date,stage_name,amount,lead_source,campaign_source,account_country_code,contact_id
+OPP-10201,2025-01-07,Closed Won,48000,Paid Social,linkedin-enterprise-abm-na,US,CON-5501
+OPP-10202,2025-01-08,Closed Won,62000,Paid Search,google-search-brand-na,US,CON-5502
+OPP-10203,2025-01-09,Closed Won,35000,Paid Search,google-search-brand-na,US,CON-5503
+OPP-10204,2025-01-10,Closed Won,41000,Paid Search,google-search-nonbrand-sem-na,US,CON-5504
+OPP-10205,2025-01-08,Closed Won,29000,Content,content-syndication-whitepaper-na,US,CON-5505
+OPP-10206,2025-01-06,Closed Won,55000,Paid Social,linkedin-enterprise-abm-emea,GB,CON-5506
+OPP-10207,2025-01-09,Closed Won,38000,Paid Search,google-search-brand-emea,GB,CON-5507
+OPP-10208,2025-01-07,Closed Won,44000,Paid Search,google-search-nonbrand-sem-emea,DE,CON-5508
+OPP-10209,2025-01-11,Closed Lost,52000,Paid Social,linkedin-enterprise-abm-na,US,CON-5509
+OPP-10210,2025-01-10,Closed Won,31000,Display,google-display-retargeting-na,US,CON-5510
+OPP-10211,2025-01-06,Qualification,67000,Paid Search,google-search-brand-na,US,CON-5511
+OPP-10212,2025-01-09,Closed Won,43000,Content,content-syndication-whitepaper-emea,GB,CON-5512
+OPP-10213,2025-01-14,Closed Won,57000,Paid Social,linkedin-enterprise-abm-na,US,CON-5513
+OPP-10214,2025-01-15,Closed Won,39000,Paid Search,google-search-brand-na,US,CON-5514
+OPP-10215,2025-01-13,Closed Won,46000,Paid Search,google-search-brand-emea,GB,CON-5515
+OPP-10216,2025-01-16,Closed Won,33000,Paid Search,google-search-nonbrand-sem-na,US,CON-5516
+OPP-10217,2025-01-14,Closed Won,28000,Display,google-display-retargeting-na,US,CON-5517
+OPP-10218,2025-01-17,Closed Lost,41000,Paid Social,linkedin-enterprise-abm-emea,DE,CON-5518
